@@ -1,0 +1,6 @@
+@AISmokingDetection_HostAddress = http://localhost:5053
+
+GET {{AISmokingDetection_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
