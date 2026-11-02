@@ -1,4 +1,3 @@
-﻿
 using AISmokingDetection.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +35,31 @@ namespace AISmokingDetection.Controllers
                 .ToListAsync();
 
             return Ok(cameras);
+        }
+
+        [HttpGet("{cameraId:int}/validate")]
+        public async Task<IActionResult> ValidateCamera(int cameraId)
+        {
+            var cameraExists = await _context.Cameras
+                .AsNoTracking()
+                .AnyAsync(c =>
+                    c.CameraId == cameraId &&
+                    c.IsActive &&
+                    c.Location.IsActive);
+
+            if (!cameraExists)
+            {
+                return NotFound(new
+                {
+                    message = "Active camera not found."
+                });
+            }
+
+            return Ok(new
+            {
+                cameraId,
+                isValid = true
+            });
         }
     }
 }
