@@ -36,8 +36,13 @@ namespace AISmokingDetection.API.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [ProducesResponseType(statusCode:200)]
+        [ProducesResponseType(statusCode:400)]
+        [ProducesResponseType(statusCode:404)]
         public async Task<IActionResult> GetIncidentById(int id)
         {
+            if (id <= 0)
+                return BadRequest("Invalid incident ID.");
             var result = await _incidentService.GetIncidentByIdAsync(id);
 
             if (result == null)
