@@ -1,5 +1,6 @@
 ﻿using AISmokingDetection.Business.Interfaces;
 using AISmokingDetection.DTOs.ProcessingJob;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AISmokingDetection.Controllers
@@ -26,7 +27,7 @@ namespace AISmokingDetection.Controllers
                 new { id = result.ProcessingJobId },
                 result);
         }
-
+        [Authorize]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetJobById(int id)
         {

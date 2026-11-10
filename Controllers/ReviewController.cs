@@ -1,5 +1,6 @@
 ﻿using AISmokingDetection.Business.Interfaces;
 using AISmokingDetection.DTOs.ReviewHistory;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AISmokingDetection.Controllers
@@ -14,7 +15,7 @@ namespace AISmokingDetection.Controllers
         {
             _reviewService = reviewService;
         }
-
+        [Authorize]
         [HttpPost("incident/{incidentId:int}")]
         public async Task<IActionResult> CreateReview(
             int incidentId,
@@ -28,7 +29,7 @@ namespace AISmokingDetection.Controllers
                 new { incidentId },
                 result);
         }
-
+        [Authorize]
         [HttpGet("incident/{incidentId:int}")]
         public async Task<IActionResult> GetReviewsByIncidentId(
             int incidentId)

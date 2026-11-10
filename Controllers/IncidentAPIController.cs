@@ -1,5 +1,6 @@
 ﻿using AISmokingDetection.Business.Interfaces;
 using AISmokingDetection.DTOs.Incident;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AISmokingDetection.API.Controllers
@@ -26,7 +27,7 @@ namespace AISmokingDetection.API.Controllers
                 new { id = result.IncidentId },
                 result);
         }
-
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllIncidents()
         {
@@ -34,7 +35,7 @@ namespace AISmokingDetection.API.Controllers
 
             return Ok(result);
         }
-
+        [Authorize]
         [HttpGet("{id:int}")]
         [ProducesResponseType(statusCode:200)]
         [ProducesResponseType(statusCode:400)]

@@ -17,6 +17,18 @@ builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AIsomkingCorsPolicy",
+        Policy =>
+        {
+            Policy.
+            WithOrigins("https://localhost:7288","http://localhost:5129").
+            AllowAnyHeader().
+            AllowAnyMethod();
+        });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -30,6 +42,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AIsmokingCorsPolicy");
 
 app.UseAuthorization();
 

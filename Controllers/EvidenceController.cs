@@ -1,5 +1,6 @@
 ﻿using AISmokingDetection.Business.Interfaces;
 using AISmokingDetection.DTOs.Evidence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AISmokingDetection.Controllers
@@ -25,7 +26,7 @@ namespace AISmokingDetection.Controllers
                 new { id = result.EvidenceId },
                 result);
         }
-
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetEvidenceById(Guid id)
         {
@@ -36,7 +37,7 @@ namespace AISmokingDetection.Controllers
 
             return Ok(result);
         }
-
+        [Authorize]
         [HttpGet("incident/{incidentId:int}")]
         public async Task<IActionResult> GetEvidenceByIncidentId(int incidentId)
         {
