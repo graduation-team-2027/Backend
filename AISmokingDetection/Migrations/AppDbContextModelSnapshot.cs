@@ -159,6 +159,156 @@ namespace AISmokingDetection.Migrations
                     b.ToTable("Staff");
                 });
 
+            modelBuilder.Entity("AISmokingDetection.Model.Evidence", b =>
+                {
+                    b.Property<Guid>("EvidenceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AvailabilityStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvidenceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StorageReference")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("EvidenceId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("Evidences");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.Incident", b =>
+                {
+                    b.Property<int>("IncidentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IncidentId"));
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("ConfidenceScore")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdentityStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ParticipantId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReviewStatus")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("IncidentId");
+
+                    b.HasIndex("CameraId");
+
+                    b.HasIndex("ParticipantId");
+
+                    b.ToTable("Incidents");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.ProcessingJob", b =>
+                {
+                    b.Property<int>("ProcessingJobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProcessingJobId"));
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DataOrigin")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModelVersion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("StartedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("ProcessingJobId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("ProcessingJobs");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.ReviewHistory", b =>
+                {
+                    b.Property<int>("ReviewHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewHistoryId"));
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReviewReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReviewHistoryId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.ToTable("ReviewHistories");
+                });
+
             modelBuilder.Entity("AISmokingDetection.Entities.Camera", b =>
                 {
                     b.HasOne("AISmokingDetection.Entities.Location", "Location")
@@ -181,6 +331,64 @@ namespace AISmokingDetection.Migrations
                     b.Navigation("Participant");
                 });
 
+            modelBuilder.Entity("AISmokingDetection.Model.Evidence", b =>
+                {
+                    b.HasOne("AISmokingDetection.Model.Incident", "Incident")
+                        .WithMany("Evidences")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.Incident", b =>
+                {
+                    b.HasOne("AISmokingDetection.Entities.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AISmokingDetection.Entities.Participant", "Participant")
+                        .WithMany()
+                        .HasForeignKey("ParticipantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("Participant");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.ProcessingJob", b =>
+                {
+                    b.HasOne("AISmokingDetection.Model.Incident", "Incident")
+                        .WithMany("ProcessingJobs")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.ReviewHistory", b =>
+                {
+                    b.HasOne("AISmokingDetection.Model.Incident", "Incident")
+                        .WithMany("ReviewHistories")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AISmokingDetection.Entities.Staff", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Incident");
+
+                    b.Navigation("Reviewer");
+                });
+
             modelBuilder.Entity("AISmokingDetection.Entities.Location", b =>
                 {
                     b.Navigation("Cameras");
@@ -189,6 +397,15 @@ namespace AISmokingDetection.Migrations
             modelBuilder.Entity("AISmokingDetection.Entities.Participant", b =>
                 {
                     b.Navigation("FaceReferenceMetadata");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Model.Incident", b =>
+                {
+                    b.Navigation("Evidences");
+
+                    b.Navigation("ProcessingJobs");
+
+                    b.Navigation("ReviewHistories");
                 });
 #pragma warning restore 612, 618
         }

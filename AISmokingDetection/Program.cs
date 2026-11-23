@@ -1,4 +1,6 @@
 
+using AISmokingDetection.Business.Interfaces;
+using AISmokingDetection.Business.Services;
 using AISmokingDetection.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,11 @@ namespace AISmokingDetection
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(
                     builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            builder.Services.AddScoped<IIncidentService, IncidentService>();
+            builder.Services.AddScoped<IEvidenceService, EvidenceService>();
+            builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
             var jwtKey = builder.Configuration["Jwt:Key"];
             var jwtIssuer = builder.Configuration["Jwt:Issuer"];
