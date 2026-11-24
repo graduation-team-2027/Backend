@@ -37,6 +37,7 @@ namespace AISmokingDetection.Controllers
             return Ok(participants);
         }
 
+        [Authorize(Roles = "Administrator")]
         [HttpPost]
         public async Task<IActionResult> EnrollParticipant(
             [FromBody] EnrollParticipantRequest request)
