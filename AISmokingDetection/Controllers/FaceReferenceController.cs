@@ -1,4 +1,4 @@
-﻿
+using AISmokingDetection.Business.Interfaces;
 using AISmokingDetection.Data;
 using AISmokingDetection.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -15,19 +15,17 @@ namespace AISmokingDetection.Controllers
         private const long MaxFileSize = 5 * 1024 * 1024;
 
         private readonly AppDbContext _context;
-        private readonly string _storagePath;
+        private readonly IFileStorageService _fileStorage;
 
-        public FaceReferenceController(AppDbContext context)
+        public FaceReferenceController(
+            AppDbContext context,
+            IFileStorageService fileStorage)
         {
             _context = context;
-
-            _storagePath = Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData),
-                "AISmokingDetection",
-                "FaceStorage");
+            _fileStorage = fileStorage;
         }
 
+        [Authorize(Roles = "Administrator")]
         [HttpPost("{participantId:int}")]
         [RequestSizeLimit(MaxFileSize + 1024 * 1024)]
         public async Task<IActionResult> UploadFaceReference(
@@ -45,7 +43,7 @@ namespace AISmokingDetection.Controllers
 
             if (image.Length > MaxFileSize)
             {
-                return BadRequest(new
+                return StatusCode(StatusCodes.Status413PayloadTooLarge, new
                 {
                     message = "Maximum image size is 5 MB."
                 });
@@ -95,23 +93,25 @@ namespace AISmokingDetection.Controllers
                 }
             }
 
-            Directory.CreateDirectory(_storagePath);
-
             var storageKey = $"{Guid.NewGuid():N}{extension}";
-            var filePath = Path.Combine(_storagePath, storageKey);
+            var storageUploaded = false;
 
             try
             {
-                await using (var output = new FileStream(
-                    filePath,
-                    FileMode.CreateNew,
-                    FileAccess.Write,
-                    FileShare.None,
-                    81920,
-                    FileOptions.Asynchronous))
+                var contentType = extension == ".png"
+                    ? "image/png"
+                    : "image/jpeg";
+
+                await using (var content = image.OpenReadStream())
                 {
-                    await image.CopyToAsync(output, cancellationToken);
+                    await _fileStorage.UploadAsync(
+                        storageKey,
+                        content,
+                        contentType,
+                        cancellationToken);
                 }
+
+                storageUploaded = true;
 
                 var metadata = new FaceReferenceMetadata
                 {
@@ -125,25 +125,109 @@ namespace AISmokingDetection.Controllers
 
                 await _context.SaveChangesAsync(cancellationToken);
 
-                return Created(
-                    $"/api/FaceReference/{metadata.FaceReferenceMetadataId}",
+                return StatusCode(
+                    StatusCodes.Status201Created,
                     new
                     {
                         metadata.FaceReferenceMetadataId,
                         metadata.ParticipantId,
-                        metadata.StorageKey,
                         metadata.CreatedAt
                     });
             }
             catch
             {
-                if (System.IO.File.Exists(filePath))
+                if (storageUploaded)
                 {
-                    System.IO.File.Delete(filePath);
+                    try
+                    {
+                        await _fileStorage.DeleteAsync(
+                            storageKey,
+                            CancellationToken.None);
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 throw;
             }
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpGet("participant/{participantId:int}")]
+        public async Task<IActionResult> GetParticipantFaceReferences(
+            int participantId,
+            CancellationToken cancellationToken)
+        {
+            var participantExists = await _context.Participants
+                .AsNoTracking()
+                .AnyAsync(
+                    p => p.ParticipantId == participantId,
+                    cancellationToken);
+
+            if (!participantExists)
+            {
+                return NotFound(new
+                {
+                    message = "Participant not found."
+                });
+            }
+
+            var references = await _context.FaceReferenceMetadata
+                .AsNoTracking()
+                .Where(r => r.ParticipantId == participantId)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new
+                {
+                    r.FaceReferenceMetadataId,
+                    r.ParticipantId,
+                    r.CreatedAt,
+                    r.IsActive
+                })
+                .ToListAsync(cancellationToken);
+
+            return Ok(references);
+        }
+
+        [Authorize(Roles = "Administrator")]
+        [HttpPatch("{id:int}/revoke")]
+        public async Task<IActionResult> RevokeFaceReference(
+            int id,
+            CancellationToken cancellationToken)
+        {
+            var reference = await _context.FaceReferenceMetadata
+                .FirstOrDefaultAsync(
+                    r => r.FaceReferenceMetadataId == id,
+                    cancellationToken);
+
+            if (reference == null)
+            {
+                return NotFound(new
+                {
+                    message = "Face reference not found."
+                });
+            }
+
+            if (!reference.IsActive)
+            {
+                return Conflict(new
+                {
+                    message = "Face reference has already been revoked."
+                });
+            }
+
+            reference.IsActive = false;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return Ok(new
+            {
+                reference.FaceReferenceMetadataId,
+                reference.ParticipantId,
+                reference.CreatedAt,
+                reference.IsActive,
+                message = "Face reference revoked successfully. Stored file was retained."
+            });
         }
 
         private static bool IsValidImageHeader(
