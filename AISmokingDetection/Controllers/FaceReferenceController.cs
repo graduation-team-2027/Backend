@@ -118,7 +118,9 @@ namespace AISmokingDetection.Controllers
                     ParticipantId = participantId,
                     StorageKey = storageKey,
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    Status = EnrollmentStatus.Pending,
+                    FailureReason = null
                 };
 
                 _context.FaceReferenceMetadata.Add(metadata);
@@ -131,7 +133,9 @@ namespace AISmokingDetection.Controllers
                     {
                         metadata.FaceReferenceMetadataId,
                         metadata.ParticipantId,
-                        metadata.CreatedAt
+                        metadata.CreatedAt,
+                        metadata.IsActive,
+                        metadata.Status
                     });
             }
             catch
@@ -182,7 +186,9 @@ namespace AISmokingDetection.Controllers
                     r.FaceReferenceMetadataId,
                     r.ParticipantId,
                     r.CreatedAt,
-                    r.IsActive
+                    r.IsActive,
+                    r.Status,
+                    r.FailureReason
                 })
                 .ToListAsync(cancellationToken);
 
@@ -208,7 +214,8 @@ namespace AISmokingDetection.Controllers
                 });
             }
 
-            if (!reference.IsActive)
+            if (reference.Status == EnrollmentStatus.Revoked ||
+                !reference.IsActive)
             {
                 return Conflict(new
                 {
@@ -217,6 +224,7 @@ namespace AISmokingDetection.Controllers
             }
 
             reference.IsActive = false;
+            reference.Status = EnrollmentStatus.Revoked;
 
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -226,6 +234,7 @@ namespace AISmokingDetection.Controllers
                 reference.ParticipantId,
                 reference.CreatedAt,
                 reference.IsActive,
+                reference.Status,
                 message = "Face reference revoked successfully. Stored file was retained."
             });
         }
