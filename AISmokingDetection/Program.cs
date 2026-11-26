@@ -26,6 +26,7 @@ namespace AISmokingDetection
             builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
             builder.Services.AddScoped<IFaceReferenceImageService, FaceReferenceImageService>();
+            builder.Services.AddScoped<IGalleryVersionService, GalleryVersionService>();
 
             var storageProvider = builder.Configuration["Storage:Provider"] ?? "Local";
 

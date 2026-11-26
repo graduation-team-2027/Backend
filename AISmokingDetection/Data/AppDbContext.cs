@@ -22,6 +22,8 @@ namespace AISmokingDetection.Data
         public DbSet<Evidence> Evidences { get; set; }
         public DbSet<ProcessingJob> ProcessingJobs { get; set; }
         public DbSet<ReviewHistory> ReviewHistories { get; set; }
+        public DbSet<GalleryState> GalleryStates { get; set; }
+        public DbSet<GalleryBuild> GalleryBuilds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,6 +69,27 @@ namespace AISmokingDetection.Data
                 .WithMany()
                 .HasForeignKey(r => r.ReviewerId)
                 .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<GalleryState>()
+                .HasKey(g => g.GalleryStateId);
+
+            modelBuilder.Entity<GalleryState>()
+                .Property(g => g.RowVersion)
+                .IsRowVersion();
+
+            modelBuilder.Entity<GalleryState>()
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_GalleryState_Singleton",
+                    "[GalleryStateId] = 1"));
+
+            modelBuilder.Entity<GalleryBuild>()
+                .HasKey(g => g.GalleryBuildId);
+
+            modelBuilder.Entity<GalleryBuild>()
+                .HasIndex(g => g.Version);
+
+            modelBuilder.Entity<GalleryBuild>()
+                .Property(g => g.ErrorMessage)
+                .HasMaxLength(2000);
         }
 
     }

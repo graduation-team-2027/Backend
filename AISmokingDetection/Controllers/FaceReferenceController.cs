@@ -4,6 +4,7 @@ using AISmokingDetection.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace AISmokingDetection.Controllers
 {
@@ -16,13 +17,16 @@ namespace AISmokingDetection.Controllers
 
         private readonly AppDbContext _context;
         private readonly IFileStorageService _fileStorage;
+        private readonly IGalleryVersionService _galleryVersionService;
 
         public FaceReferenceController(
             AppDbContext context,
-            IFileStorageService fileStorage)
+            IFileStorageService fileStorage,
+            IGalleryVersionService galleryVersionService)
         {
             _context = context;
             _fileStorage = fileStorage;
+            _galleryVersionService = galleryVersionService;
         }
 
         [Authorize(Roles = "Administrator")]
@@ -201,7 +205,13 @@ namespace AISmokingDetection.Controllers
             int id,
             CancellationToken cancellationToken)
         {
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable,
+                    cancellationToken);
+
             var reference = await _context.FaceReferenceMetadata
+                .Include(r => r.Participant)
                 .FirstOrDefaultAsync(
                     r => r.FaceReferenceMetadataId == id,
                     cancellationToken);
@@ -223,10 +233,22 @@ namespace AISmokingDetection.Controllers
                 });
             }
 
+            var affectsGallery =
+                reference.IsActive &&
+                reference.Status == EnrollmentStatus.Ready &&
+                reference.Participant.IsActive;
+
             reference.IsActive = false;
             reference.Status = EnrollmentStatus.Revoked;
 
+            if (affectsGallery)
+            {
+                await _galleryVersionService
+                    .IncrementDesiredVersionAsync(cancellationToken);
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return Ok(new
             {

@@ -85,6 +85,71 @@ namespace AISmokingDetection.Migrations
                     b.ToTable("FaceReferenceMetadata");
                 });
 
+            modelBuilder.Entity("AISmokingDetection.Entities.GalleryBuild", b =>
+                {
+                    b.Property<int>("GalleryBuildId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GalleryBuildId"));
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("GalleryBuildId");
+
+                    b.HasIndex("Version");
+
+                    b.ToTable("GalleryBuilds");
+                });
+
+            modelBuilder.Entity("AISmokingDetection.Entities.GalleryState", b =>
+                {
+                    b.Property<int>("GalleryStateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GalleryStateId"));
+
+                    b.Property<long?>("AppliedVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("DesiredVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("LastBuildCompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastUpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("GalleryStateId");
+
+                    b.ToTable("GalleryStates", t =>
+                        {
+                            t.HasCheckConstraint("CK_GalleryState_Singleton", "[GalleryStateId] = 1");
+                        });
+                });
+
             modelBuilder.Entity("AISmokingDetection.Entities.Location", b =>
                 {
                     b.Property<int>("LocationId")

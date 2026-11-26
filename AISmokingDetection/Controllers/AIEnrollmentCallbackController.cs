@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using System.Data;
+using AISmokingDetection.Business.Interfaces;
 using System.Text;
 
 namespace AISmokingDetection.Controllers
@@ -18,13 +20,16 @@ namespace AISmokingDetection.Controllers
 
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IGalleryVersionService _galleryVersionService;
 
         public AIEnrollmentCallbackController(
             AppDbContext context,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IGalleryVersionService galleryVersionService)
         {
             _context = context;
             _configuration = configuration;
+            _galleryVersionService = galleryVersionService;
         }
 
         [HttpPost]
@@ -83,6 +88,11 @@ namespace AISmokingDetection.Controllers
                 ? EnrollmentStatus.Ready
                 : EnrollmentStatus.Failed;
 
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable,
+                    cancellationToken);
+
             var affectedRows = await _context.FaceReferenceMetadata
                 .Where(r =>
                     r.FaceReferenceMetadataId == request.FaceReferenceMetadataId &&
@@ -96,6 +106,25 @@ namespace AISmokingDetection.Controllers
 
             if (affectedRows == 1)
             {
+                if (targetStatus == EnrollmentStatus.Ready)
+                {
+                    var participantIsActive = await _context.FaceReferenceMetadata
+                        .AnyAsync(
+                            r => r.FaceReferenceMetadataId == request.FaceReferenceMetadataId &&
+                                 r.IsActive &&
+                                 r.Status == EnrollmentStatus.Ready &&
+                                 r.Participant.IsActive,
+                            cancellationToken);
+
+                    if (participantIsActive)
+                    {
+                        await _galleryVersionService
+                            .IncrementDesiredVersionAsync(cancellationToken);
+                    }
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+
                 return Ok(new
                 {
                     request.FaceReferenceMetadataId,
