@@ -28,6 +28,7 @@ namespace AISmokingDetection.Business.Services
             CancellationToken cancellationToken)
         {
             ValidateStorageKey(storageKey);
+            ArgumentNullException.ThrowIfNull(content);
 
             var request = new PutObjectRequest
             {
@@ -39,6 +40,29 @@ namespace AISmokingDetection.Business.Services
 
             await _s3Client.PutObjectAsync(
                 request,
+                cancellationToken);
+        }
+
+        public async Task CopyToAsync(
+            string storageKey,
+            Stream destination,
+            CancellationToken cancellationToken)
+        {
+            ValidateStorageKey(storageKey);
+            ValidateDestination(destination);
+
+            var request = new GetObjectRequest
+            {
+                BucketName = _bucketName,
+                Key = storageKey
+            };
+
+            using var response = await _s3Client.GetObjectAsync(
+                request,
+                cancellationToken);
+
+            await response.ResponseStream.CopyToAsync(
+                destination,
                 cancellationToken);
         }
 
@@ -57,6 +81,18 @@ namespace AISmokingDetection.Business.Services
             await _s3Client.DeleteObjectAsync(
                 request,
                 cancellationToken);
+        }
+
+        private static void ValidateDestination(Stream destination)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+
+            if (!destination.CanWrite)
+            {
+                throw new ArgumentException(
+                    "Destination stream must be writable.",
+                    nameof(destination));
+            }
         }
 
         private static void ValidateStorageKey(string storageKey)

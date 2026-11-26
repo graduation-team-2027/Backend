@@ -1,4 +1,3 @@
-
 using Amazon.Runtime;
 using Amazon.S3;
 using AISmokingDetection.Business.Interfaces;
@@ -25,47 +24,48 @@ namespace AISmokingDetection
             builder.Services.AddScoped<IIncidentService, IncidentService>();
             builder.Services.AddScoped<IEvidenceService, EvidenceService>();
             builder.Services.AddScoped<IProcessingJobService, ProcessingJobService>();
-builder.Services.AddScoped<IReviewService, ReviewService>();
-var storageProvider = builder.Configuration["Storage:Provider"] ?? "Local";
+            builder.Services.AddScoped<IReviewService, ReviewService>();
+            builder.Services.AddScoped<IFaceReferenceImageService, FaceReferenceImageService>();
 
-if (storageProvider.Equals("Local", StringComparison.OrdinalIgnoreCase))
-{
-    builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
-}
-else if (storageProvider.Equals("R2", StringComparison.OrdinalIgnoreCase))
-{
-    var serviceUrl = builder.Configuration["CloudflareR2:ServiceUrl"];
-    var accessKey = builder.Configuration["CloudflareR2:AccessKey"];
-    var secretKey = builder.Configuration["CloudflareR2:SecretKey"];
-    var bucketName = builder.Configuration["CloudflareR2:BucketName"];
+            var storageProvider = builder.Configuration["Storage:Provider"] ?? "Local";
 
-    if (string.IsNullOrWhiteSpace(serviceUrl) ||
-        string.IsNullOrWhiteSpace(accessKey) ||
-        string.IsNullOrWhiteSpace(secretKey) ||
-        string.IsNullOrWhiteSpace(bucketName))
-    {
-        throw new InvalidOperationException(
-            "Cloudflare R2 configuration is incomplete.");
-    }
-
-    builder.Services.AddSingleton<IAmazonS3>(_ =>
-        new AmazonS3Client(
-            new BasicAWSCredentials(accessKey, secretKey),
-            new AmazonS3Config
+            if (storageProvider.Equals("Local", StringComparison.OrdinalIgnoreCase))
             {
-                ServiceURL = serviceUrl,
-                ForcePathStyle = true,
-                AuthenticationRegion = "auto"
-            }));
+                builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+            }
+            else if (storageProvider.Equals("R2", StringComparison.OrdinalIgnoreCase))
+            {
+                var serviceUrl = builder.Configuration["CloudflareR2:ServiceUrl"];
+                var accessKey = builder.Configuration["CloudflareR2:AccessKey"];
+                var secretKey = builder.Configuration["CloudflareR2:SecretKey"];
+                var bucketName = builder.Configuration["CloudflareR2:BucketName"];
 
-    builder.Services.AddScoped<IFileStorageService, R2FileStorageService>();
-}
-else
-{
-    throw new InvalidOperationException(
-        $"Unsupported storage provider: {storageProvider}");
-}
+                if (string.IsNullOrWhiteSpace(serviceUrl) ||
+                    string.IsNullOrWhiteSpace(accessKey) ||
+                    string.IsNullOrWhiteSpace(secretKey) ||
+                    string.IsNullOrWhiteSpace(bucketName))
+                {
+                    throw new InvalidOperationException(
+                        "Cloudflare R2 configuration is incomplete.");
+                }
 
+                builder.Services.AddSingleton<IAmazonS3>(_ =>
+                    new AmazonS3Client(
+                        new BasicAWSCredentials(accessKey, secretKey),
+                        new AmazonS3Config
+                        {
+                            ServiceURL = serviceUrl,
+                            ForcePathStyle = true,
+                            AuthenticationRegion = "auto"
+                        }));
+
+                builder.Services.AddScoped<IFileStorageService, R2FileStorageService>();
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Unsupported storage provider: {storageProvider}");
+            }
             var jwtKey = builder.Configuration["Jwt:Key"];
             var jwtIssuer = builder.Configuration["Jwt:Issuer"];
             var jwtAudience = builder.Configuration["Jwt:Audience"];

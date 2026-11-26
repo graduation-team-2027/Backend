@@ -8,6 +8,11 @@
             string contentType,
             CancellationToken cancellationToken);
 
+        Task CopyToAsync(
+            string storageKey,
+            Stream destination,
+            CancellationToken cancellationToken);
+
         Task DeleteAsync(
             string storageKey,
             CancellationToken cancellationToken);

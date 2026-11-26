@@ -22,6 +22,7 @@ namespace AISmokingDetection.Business.Services
             CancellationToken cancellationToken)
         {
             ValidateStorageKey(storageKey);
+            ArgumentNullException.ThrowIfNull(content);
 
             Directory.CreateDirectory(_storagePath);
 
@@ -36,6 +37,27 @@ namespace AISmokingDetection.Business.Services
                 FileOptions.Asynchronous);
 
             await content.CopyToAsync(output, cancellationToken);
+        }
+
+        public async Task CopyToAsync(
+            string storageKey,
+            Stream destination,
+            CancellationToken cancellationToken)
+        {
+            ValidateStorageKey(storageKey);
+            ValidateDestination(destination);
+
+            var filePath = Path.Combine(_storagePath, storageKey);
+
+            await using var input = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            await input.CopyToAsync(destination, cancellationToken);
         }
 
         public Task DeleteAsync(
@@ -54,10 +76,24 @@ namespace AISmokingDetection.Business.Services
             return Task.CompletedTask;
         }
 
+        private static void ValidateDestination(Stream destination)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+
+            if (!destination.CanWrite)
+            {
+                throw new ArgumentException(
+                    "Destination stream must be writable.",
+                    nameof(destination));
+            }
+        }
+
         private static void ValidateStorageKey(string storageKey)
         {
             if (string.IsNullOrWhiteSpace(storageKey) ||
-                storageKey != Path.GetFileName(storageKey))
+                storageKey != Path.GetFileName(storageKey) ||
+                storageKey.Contains('/') ||
+                storageKey.Contains('\\'))
             {
                 throw new ArgumentException("Invalid storage key.");
             }

@@ -1,4 +1,3 @@
-
 namespace AISmokingDetection.Entities
 {
     public class FaceReferenceMetadata
@@ -14,5 +13,9 @@ namespace AISmokingDetection.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public bool IsActive { get; set; } = true;
+
+        public EnrollmentStatus Status { get; set; } = EnrollmentStatus.Pending;
+
+        public string? FailureReason { get; set; }
     }
 }
