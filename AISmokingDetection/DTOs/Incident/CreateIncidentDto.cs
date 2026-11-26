@@ -1,4 +1,6 @@
-﻿namespace AISmokingDetection.DTOs.Incident
+﻿using AISmokingDetection.Model;
+
+namespace AISmokingDetection.DTOs.Incident
 {
     public class CreateIncidentDto
     {
@@ -7,5 +9,6 @@
         public int? ParticipantId { get; set; }
         public string EventType { get; set; } = string.Empty;
         public decimal? ConfidenceScore { get; set; }
+        public IdentityStatus IdentityStatus { get; set; } = IdentityStatus.Unknown;
     }
 }

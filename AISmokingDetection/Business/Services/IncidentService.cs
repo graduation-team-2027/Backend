@@ -19,6 +19,30 @@ namespace AISmokingDetection.Business.Services
 
         public async Task<IncidentResponseDto> CreateIncidentAsync(CreateIncidentDto dto)
         {
+            if (!Enum.IsDefined(typeof(IdentityStatus), dto.IdentityStatus))
+                throw new ArgumentException("Invalid identity status.");
+
+            if (dto.IdentityStatus == IdentityStatus.MatchedCandidate)
+            {
+                if (!dto.ParticipantId.HasValue)
+                    throw new ArgumentException(
+                        "ParticipantId is required when IdentityStatus is MatchedCandidate.");
+
+                bool participantIsActive = await _context.Participants
+                    .AnyAsync(p =>
+                        p.ParticipantId == dto.ParticipantId.Value &&
+                        p.IsActive);
+
+                if (!participantIsActive)
+                    throw new ArgumentException(
+                        "The specified participant does not exist or is inactive.");
+            }
+            else if (dto.ParticipantId.HasValue)
+            {
+                throw new ArgumentException(
+                    "ParticipantId must be null when IdentityStatus is Unknown or InsufficientQuality.");
+            }
+
             bool eventExists = await _context.Incidents
                 .AnyAsync(i => i.EventId == dto.EventId);
 
@@ -33,7 +57,7 @@ namespace AISmokingDetection.Business.Services
                 EventType = dto.EventType,
                 ConfidenceScore = dto.ConfidenceScore,
                 Status = IncidentStatus.Suspected,
-                IdentityStatus = IdentityStatus.Unknown,
+                IdentityStatus = dto.IdentityStatus,
                 ReviewStatus = ReviewStatus.Pending,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow

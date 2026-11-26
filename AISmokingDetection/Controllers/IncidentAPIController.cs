@@ -19,12 +19,19 @@ namespace AISmokingDetection.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateIncident(CreateIncidentDto dto)
         {
-            var result = await _incidentService.CreateIncidentAsync(dto);
+            try
+            {
+                var result = await _incidentService.CreateIncidentAsync(dto);
 
-            return CreatedAtAction(
-                nameof(GetIncidentById),
-                new { id = result.IncidentId },
-                result);
+                return CreatedAtAction(
+                    nameof(GetIncidentById),
+                    new { id = result.IncidentId },
+                    result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize]
